@@ -7,16 +7,25 @@ import random
 import threading
 import keyboard
 
+MAX_HUNGER = 200
+MAX_FUN = 200
+SCALES_DIVISION_PRICE = 3
+HUNGER_OVERSATURATION_LIMIT = 100
+FUN_OVERINDULGANCE_LIMIT = 100
 FEED_COOLDOWN = 10
 PLAY_COOLDOWN = 15
-SCALES_DIVISION_PRICE = 10
+
+HUNGER_SCALE_LENGTH = HUNGER_OVERSATURATION_LIMIT
+FUN_SCALE_LENGTH = FUN_OVERINDULGANCE_LIMIT
+HUNGER_SCALE_DIVISIONS = HUNGER_SCALE_LENGTH // SCALES_DIVISION_PRICE
+FUN_SCALE_DIVISIONS = FUN_SCALE_LENGTH // SCALES_DIVISION_PRICE
 STOP_EVENT = threading.Event()
 
 class Pet:
     def __init__(self, name: str = "Nnican", hunger=100, fun=50) -> None:
         self.name: str = name
         self.is_alive = True
-        self.__art: str = "     ≽(._.)≼\n       ( )_"
+        self.__art: str = "    ≽(._.)≼\n      ( )_"
         self.__hunger: int = hunger
         self.__fun: int = fun
         self.__feed_cooldown: int = 0
@@ -40,7 +49,10 @@ class Pet:
 
     @hunger.setter
     def hunger(self, value) -> None:
-        self.__hunger = value
+        if value < MAX_HUNGER:
+            self.__hunger = value
+        else:
+            self.__hunger = MAX_HUNGER
         self.check_state()
         self.display()
         if self.hunger <= 0:
@@ -48,7 +60,10 @@ class Pet:
 
     @fun.setter
     def fun(self, value) -> None:
-        self.__fun = value
+        if value < MAX_FUN:
+            self.__fun = value
+        else:
+            self.__fun = MAX_FUN
         self.check_state()
         self.display()
         if self.fun <= 0:
@@ -65,10 +80,25 @@ class Pet:
         self.display()
 
     def display(self) -> None:
-        fun_scale_divisions = self.fun // SCALES_DIVISION_PRICE
-        hunger_scale_divisions = self.hunger // SCALES_DIVISION_PRICE
+        hunger_scale_divisions: int = self.hunger // SCALES_DIVISION_PRICE
+        fun_scale_divisions: int = self.fun // SCALES_DIVISION_PRICE
         terminal.clear()
-        print(f"Name: {self.name}; Alive: {self.is_alive}\n\n{self.__art}\n\nHunger: |{'▇' * hunger_scale_divisions if hunger_scale_divisions <= SCALES_DIVISION_PRICE else '▇' * SCALES_DIVISION_PRICE}{(SCALES_DIVISION_PRICE - hunger_scale_divisions) * ' '}|{'▇' * (hunger_scale_divisions - SCALES_DIVISION_PRICE) if hunger_scale_divisions > SCALES_DIVISION_PRICE else ''}\n   Fun: {'|' + '▇' * fun_scale_divisions if fun_scale_divisions <= SCALES_DIVISION_PRICE else '▇' * SCALES_DIVISION_PRICE}{(SCALES_DIVISION_PRICE - fun_scale_divisions) * ' '}|{'▇' * (fun_scale_divisions - SCALES_DIVISION_PRICE) if fun_scale_divisions > SCALES_DIVISION_PRICE else ''}\n\nfeed cooldown: {self.feed_cooldown}; play cooldown: {self.play_cooldown}\nNote: P for play and F for feed <3")
+        output: str = f"""
+{self.__art}
+
+   Hunger: {self.hunger}
+\033[01;38;05;15m0|\033[01;38;05;179m{'▇' * hunger_scale_divisions if hunger_scale_divisions <= HUNGER_SCALE_DIVISIONS else '▇' * HUNGER_SCALE_DIVISIONS}\033[01;38;05;238m{'▇' * ((HUNGER_SCALE_LENGTH // SCALES_DIVISION_PRICE) - hunger_scale_divisions) if hunger_scale_divisions > 0 else '▇' * HUNGER_SCALE_DIVISIONS}\033[01;38;05;15m|{HUNGER_SCALE_LENGTH}
+   Fun: {self.fun}
+\033[01;38;05;15m0|\033[01;38;05;139m{'▇' * fun_scale_divisions if fun_scale_divisions <= FUN_SCALE_DIVISIONS else '▇' * FUN_SCALE_DIVISIONS}\033[01;38;05;238m{'▇' * ((FUN_SCALE_LENGTH // SCALES_DIVISION_PRICE) - fun_scale_divisions) if fun_scale_divisions > 0 else '▇' * FUN_SCALE_DIVISIONS}\033[01;38;05;15m|{FUN_SCALE_LENGTH}
+
+feed cooldown: {self.feed_cooldown}; play cooldown: {self.play_cooldown}
+
+Note: P for play and F for feed <3 (and Q to quit)
+Bugs:
+- Need press P first to may possible use F
+- May not read keyboard events
+"""
+        print(f"\n{' ' * (6 - (len(self.name) // 2 - 1 if len(self.name) % 2 == 0 else len(self.name) // 2)) if len(self.name) <= 10 else ''}\033[01;37;42m {self.name} \033[0m" if self.is_alive else f"     \033[01;38;05;15;48;05;242m {self.name} \033[0m", output)
 
     def feed(self) -> None:
         print("f")
@@ -86,63 +116,63 @@ class Pet:
 
     def check_state(self) -> None:
         if self.fun <= 0 and self.hunger > 0:
-            self.__art = "\n≽(‾--‾)≼ )_\n╱     ╲"
+            self.__art = "\n≽(‾-‾)≼ )_\n╱     ╲"
         elif self.hunger <= 0:
-            self.__art = "\n≽(x__x)≼ )_"
+            self.__art = "\n≽(x_x)≼ )_"
 
 
         # if self.hunger >= 120 and self.fun >= 120:
-        #     self.__art = "     ≽(^‿ ​^)≼\n       ( )_"
+        #     self.__art = "    ≽(^‿ ​^)≼\n       ( )_"
         # elif self.hunger >= 120 and 100 <= self.fun < 120:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif self.hunger >= 120 and 75 <= self.fun < 100:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif self.hunger >= 120 and 25 <= self.fun < 75:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif self.hunger >= 120 and 0 < self.fun < 25:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
 
         # if 100 <= self.hunger < 120 and self.fun >= 120:
-        #     self.__art = "     ≽(^‿ ​^)≼\n       ( )_"
+        #     self.__art = "    ≽(^‿ ​^)≼\n       ( )_"
         # elif 100 <= self.hunger < 120 and 100 <= self.fun < 120:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 100 <= self.hunger < 120 and 75 <= self.fun < 100:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 100 <= self.hunger < 120 and 25 <= self.fun < 75:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 100 <= self.hunger < 120 and 0 < self.fun < 25:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
 
         # if 75 <= self.hunger < 100 and self.fun >= 120:
-        #     self.__art = "     ≽(^‿ ​^)≼\n       ( )_"
+        #     self.__art = "    ≽(^‿ ​^)≼\n       ( )_"
         # elif 75 <= self.hunger < 100 and 100 <= self.fun < 120:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 75 <= self.hunger < 100 and 75 <= self.fun < 100:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 75 <= self.hunger < 100 and 25 <= self.fun < 75:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 75 <= self.hunger < 100 and 0 < self.fun < 25:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
 
         # if 25 <= self.hunger < 75 and self.fun >= 120:
-        #     self.__art = "     ≽(^‿ ​^)≼\n       ( )_"
+        #     self.__art = "    ≽(^‿ ​^)≼\n       ( )_"
         # elif 25 <= self.hunger < 75 and 100 <= self.fun < 120:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 25 <= self.hunger < 75 and 75 <= self.fun < 100:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif 25 <= self.hunger < 75 and 0 < self.fun < 25:
-        #     self.__art = "     ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(._.)≼\n       ( )_"
 
         # if 0 < self.hunger < 25 and self.fun >= 120:
-        #     self.__art = "     ≽(^‿ ​^)≼\n       (@)_"
+        #     self.__art = "    ≽(^‿ ​^)≼\n       (@)_"
         # elif 0 < self.hunger < 25 and 100 <= self.fun < 120:
-        #     self.__art = "     ≽(._.)≼\n       (@)_"
+        #     self.__art = "    ≽(._.)≼\n       (@)_"
         # elif 0 < self.hunger < 25 and 75 <= self.fun < 100:
-        #     self.__art = "     ≽(._.)≼\n       (@)_"
+        #     self.__art = "    ≽(._.)≼\n       (@)_"
         # elif 0 < self.hunger < 25 and 25 <= self.fun < 75:
-        #     self.__art = "     ≽(._.)≼\n       (@)_"
+        #     self.__art = "    ≽(._.)≼\n       (@)_"
         # elif 0 < self.hunger < 25 and 0 < self.fun < 25:
-        #     self.__art = "     ≽(._.)≼\n       (@)_"
+        #     self.__art = "    ≽(._.)≼\n       (@)_"
 
 
         elif self.hunger > 120 or self.fun > 120:
@@ -152,7 +182,7 @@ class Pet:
             state_thread.join()
 
     def handle_overindulgence(self) -> None:
-        while self.hunger > 120 or self.fun > 120 and not STOP_EVENT.is_set():
+        while self.hunger > HUNGER_OVERSATURATION_LIMIT or self.fun > FUN_OVERINDULGANCE_LIMIT and not STOP_EVENT.is_set():
             time.sleep(30)
             if self.hunger > 120:
                 self.hunger -= 10
@@ -188,7 +218,10 @@ class Pet:
         while (self.is_alive or time.time() - start_time <= 600) and not STOP_EVENT.is_set():
             self.hunger -= 10
             self.fun -= 5
-            time.sleep(random.randint(2, 30))
+            for t in range(random.randint(2, 30)):
+                if not ((self.is_alive or time.time() - start_time <= 600) and not STOP_EVENT.is_set()):
+                    break
+                time.sleep(1)
 
     def cooldown_timer(self) -> None:
         while self.is_alive and not STOP_EVENT.is_set():
@@ -199,7 +232,10 @@ class Pet:
                 self.__play_cooldown -= 1
 
 def tamagochi() -> str:
-    axolotl = Pet()
+    name: str = input("Set pet name: ")
+    if not name:
+        name = "Axolotl"
+    axolotl = Pet(name)
 
     input_thread = threading.Thread(target=axolotl.interact)
     update_thread = threading.Thread(target=axolotl.update)
@@ -209,16 +245,18 @@ def tamagochi() -> str:
     update_thread.start()
     cooldown_update_thread.start()
 
-    STOP_EVENT.set()
     input_thread.join()
+    STOP_EVENT.set()
     update_thread.join()
+    STOP_EVENT.set()
+
     cooldown_update_thread.join()
 
     if axolotl.is_alive:
-        return f"Вы вознесли {axolotl.name}!"
+        return f"Вы отдали {axolotl.name} в добрые руки."
     else:
         return f"Вы не сохранили {axolotl.name}..."
 
 if __name__ == "__main__":
-    result: str = tamagochi()
+    result = tamagochi()
     print(result)
