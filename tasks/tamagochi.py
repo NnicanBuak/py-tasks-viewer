@@ -86,17 +86,14 @@ class Pet:
         output: str = f"""
 {self.__art}
 
-   Hunger: {self.hunger}
-\033[01;38;05;15m0|\033[01;38;05;179m{'▇' * hunger_scale_divisions if hunger_scale_divisions <= HUNGER_SCALE_DIVISIONS else '▇' * HUNGER_SCALE_DIVISIONS}\033[01;38;05;238m{'▇' * ((HUNGER_SCALE_LENGTH // SCALES_DIVISION_PRICE) - hunger_scale_divisions) if hunger_scale_divisions > 0 else '▇' * HUNGER_SCALE_DIVISIONS}\033[01;38;05;15m|{HUNGER_SCALE_LENGTH}
-   Fun: {self.fun}
-\033[01;38;05;15m0|\033[01;38;05;139m{'▇' * fun_scale_divisions if fun_scale_divisions <= FUN_SCALE_DIVISIONS else '▇' * FUN_SCALE_DIVISIONS}\033[01;38;05;238m{'▇' * ((FUN_SCALE_LENGTH // SCALES_DIVISION_PRICE) - fun_scale_divisions) if fun_scale_divisions > 0 else '▇' * FUN_SCALE_DIVISIONS}\033[01;38;05;15m|{FUN_SCALE_LENGTH}
+   \033[01;38;05;15mHunger: {self.hunger}\033[m
+\033[01;38;05;15m0|\033[01;38;05;179m{'▇' * hunger_scale_divisions if hunger_scale_divisions <= HUNGER_SCALE_DIVISIONS else '▇' * HUNGER_SCALE_DIVISIONS}\033[01;38;05;238m{'▇' * ((HUNGER_SCALE_LENGTH // SCALES_DIVISION_PRICE) - hunger_scale_divisions) if hunger_scale_divisions > 0 else '▇' * HUNGER_SCALE_DIVISIONS}\033[01;38;05;15m|{HUNGER_SCALE_LENGTH}\033[0m
+   \033[01;38;05;15mFun: {self.fun}\033[0m
+\033[01;38;05;15m0|\033[01;38;05;139m{'▇' * fun_scale_divisions if fun_scale_divisions <= FUN_SCALE_DIVISIONS else '▇' * FUN_SCALE_DIVISIONS}\033[01;38;05;238m{'▇' * ((FUN_SCALE_LENGTH // SCALES_DIVISION_PRICE) - fun_scale_divisions) if fun_scale_divisions > 0 else '▇' * FUN_SCALE_DIVISIONS}\033[01;38;05;15m|{FUN_SCALE_LENGTH}\033[0m
 
 feed cooldown: {self.feed_cooldown}; play cooldown: {self.play_cooldown}
 
-Note: P for play and F for feed <3 (and Q to quit)
-Bugs:
-- Need press P first to may possible use F
-- May not read keyboard events
+[F]eed [P]lay [Q]uit
 """
         print(f"\n{' ' * (6 - (len(self.name) // 2 - 1 if len(self.name) % 2 == 0 else len(self.name) // 2)) if len(self.name) <= 10 else ''}\033[01;37;42m {self.name} \033[0m" if self.is_alive else f"     \033[01;38;05;15;48;05;242m {self.name} \033[0m", output)
 
@@ -120,13 +117,10 @@ Bugs:
         elif self.hunger <= 0:
             self.__art = "\n≽(x_x)≼ )_"
 
-
-        # if self.hunger >= 120 and self.fun >= 120:
-        #     self.__art = "    ≽(^‿ ​^)≼\n       ( )_"
-        # elif self.hunger >= 120 and 100 <= self.fun < 120:
+        # elif self.hunger >= 120 and self.fun > 100:
         #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif self.hunger >= 120 and 75 <= self.fun < 100:
-        #     self.__art = "    ≽(._.)≼\n       ( )_"
+        #     self.__art = "    ≽(^‿ ​^)≼\n       ( )_"
         # elif self.hunger >= 120 and 25 <= self.fun < 75:
         #     self.__art = "    ≽(._.)≼\n       ( )_"
         # elif self.hunger >= 120 and 0 < self.fun < 25:
@@ -193,24 +187,6 @@ Bugs:
                 if self.fun < 0:
                     self.fun = 0
 
-    def interact(self) -> None:
-        while self.is_alive and not STOP_EVENT.is_set():
-            try:
-                event = keyboard.read_event()
-                if event.event_type == keyboard.KEY_DOWN:
-                    key_name = event.name
-
-                    if key_name == 'f':
-                        self.feed()
-                    elif key_name == 'p':
-                        self.play()
-                    elif key_name == 'q':
-                        print("Завершение игровых процессов...")
-                        break
-            except KeyboardInterrupt:
-                break
-
-
     def update(self) -> None:
         start_time: float = time.time()
         self.display()
@@ -237,25 +213,24 @@ def tamagochi() -> str:
         name = "Axolotl"
     axolotl = Pet(name)
 
-    input_thread = threading.Thread(target=axolotl.interact)
+    keyboard.add_hotkey('q', lambda: STOP_EVENT.set())
+    keyboard.add_hotkey('f', lambda: axolotl.feed())
+    keyboard.add_hotkey('p', lambda: axolotl.play())
     update_thread = threading.Thread(target=axolotl.update)
     cooldown_update_thread = threading.Thread(target=axolotl.cooldown_timer)
 
-    input_thread.start()
     update_thread.start()
     cooldown_update_thread.start()
 
-    input_thread.join()
-    STOP_EVENT.set()
     update_thread.join()
     STOP_EVENT.set()
 
     cooldown_update_thread.join()
 
     if axolotl.is_alive:
-        return f"Вы отдали {axolotl.name} в добрые руки."
+        return f"Вы передали {axolotl.name} в добрые руки."
     else:
-        return f"Вы не сохранили {axolotl.name}..."
+        return f"{axolotl.name} ушёл от вас."
 
 if __name__ == "__main__":
     result = tamagochi()
