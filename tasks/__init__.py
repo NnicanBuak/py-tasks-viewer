@@ -14,4 +14,4 @@ from ._13 import *
 from ._14 import *
 from ._15 import *
 from ._16 import *
-from tasks.tamagochi import tamagochi
+from .tamagochi import main as tamagochi

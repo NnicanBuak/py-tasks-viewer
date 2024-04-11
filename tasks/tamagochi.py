@@ -111,6 +111,9 @@ feed cooldown: {self.feed_cooldown}; play cooldown: {self.play_cooldown}
 
             self.play_cooldown = PLAY_COOLDOWN
 
+    def leave(self) -> None:
+        self.fun -= self.fun // 2
+
     def check_state(self) -> None:
         if self.fun <= 0 and self.fullness > 0:
             self.__art = "\n≽(‾-‾)≼ )_\n╱     ╲"
@@ -206,6 +209,7 @@ class Game:
             self.pet.stop_event.set()
             self.update_thread.join() # type: ignore
             self.cooldown_update_thread.join() # type: ignore
+            self.pet.leave()
 
     def start(self) -> None:
         name: str = input("Set pet name: ")
@@ -235,6 +239,9 @@ class Game:
         else:
             raise AttributeError("No pet")
 
-if __name__ == "__main__":
+def main() -> None:
     game = Game()
     game.start()
+
+if __name__ == "__main__":
+    main()
